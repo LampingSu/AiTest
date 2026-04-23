@@ -1,0 +1,59 @@
+name: OpenCode GitHub Integration
+
+on:
+  issue_comment:
+    types: [created]
+  issues:
+    types: [opened]
+  pull_request:
+    types: [opened, synchronize]
+  workflow_dispatch:   # 手动触发，方便测试
+
+permissions:
+  contents: write
+  pull-requests: write
+  issues: write
+
+jobs:
+  opencode-task:
+    # 仅当评论中包含 /opencode 或 /oc 时触发，且仅限你指定的用户
+    if: |
+      (github.event_name == 'issue_comment' && 
+       contains(github.event.comment.body, '/opencode')) &&
+       github.event.comment.user.login == 'LampingSu'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30    # 本地模型可能较慢
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Cache OpenCode
+        uses: actions/cache@v4
+        id: cache-opencode
+        with:
+          path: ~/.local/bin/opencode
+          key: ${{ runner.os }}-opencode-0.16.0
+
+      - name: Install OpenCode
+        if: steps.cache-opencode.outputs.cache-hit != 'true'
+        run: |
+          curl -fsSL https://opencode.ai/install | bash -s -- --version 0.16.0
+          echo "$HOME/.local/bin" >> $GITHUB_PATH
+
+      - name: Run OpenCode
+        uses: anomalyco/opencode/github@latest
+        env:
+          OPENCODE_MODEL: "zhipu/glm-4.7-flash"
+          ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          model: ${{ env.OPENCODE_MODEL }}
+          use_github_token: true
+          prompt: |
+            你是 OpenCode AI 编程助手。根据当前 Issue 或 PR 的上下文，执行对应操作：
+            - 如果是 Issue，分析问题并提供解决思路（不要直接修改代码）
+            - 如果是 PR，审查代码变更，指出潜在错误和改进建议
+            请用中文回复。
