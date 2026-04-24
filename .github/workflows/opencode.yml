@@ -40,7 +40,7 @@ jobs:
       - name: Install OpenCode
         if: steps.cache-opencode.outputs.cache-hit != 'true'
         run: |
-          curl -fsSL https://opencode.ai/install | bash -s -- --version 0.16.0
+          curl -fsSL https://opencode.ai/install | bash
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
       - name: Run OpenCode
