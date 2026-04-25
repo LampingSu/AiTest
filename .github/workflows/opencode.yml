@@ -22,20 +22,13 @@ jobs:
        contains(github.event.comment.body, '/opencode')) &&
        github.event.comment.user.login == 'LampingSu'
     runs-on: ubuntu-latest
-    timeout-minutes: 30    # 本地模型可能较慢
+    timeout-minutes: 15    # 本地模型可能较慢
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Cache OpenCode
-        uses: actions/cache@v4
-        id: cache-opencode
-        with:
-          path: ~/.local/bin/opencode
-          key: ${{ runner.os }}-opencode-0.16.0
 
       - name: Install OpenCode
         if: steps.cache-opencode.outputs.cache-hit != 'true'
@@ -46,7 +39,7 @@ jobs:
       - name: Run OpenCode
         uses: anomalyco/opencode/github@latest
         env:
-          OPENCODE_MODEL: "opencode/minimax-m2.5-free"
+          OPENCODE_MODEL: "zhipu/glm-4.5-flash"
           ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
