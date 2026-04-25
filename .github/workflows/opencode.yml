@@ -39,7 +39,7 @@ jobs:
       - name: Run OpenCode
         uses: anomalyco/opencode/github@latest
         env:
-          OPENCODE_MODEL: "zhipu/glm-4.5-flash"
+          OPENCODE_MODEL: "zhipuai/glm-4.5-flash"
           ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
