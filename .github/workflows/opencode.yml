@@ -16,7 +16,7 @@ permissions:
 
 jobs:
   opencode-task:
-    # 仅当评论中包含 /opencode 或 /oc 时触发，且仅限你指定的用户
+    # 仅当评论中包含 /opencode 时触发，且仅限你指定的用户
     if: |
       (github.event_name == 'issue_comment' && 
        contains(github.event.comment.body, '/opencode')) &&
@@ -36,11 +36,31 @@ jobs:
           curl -fsSL https://opencode.ai/install | bash
           echo "$HOME/.local/bin" >> $GITHUB_PATH
 
+      - name: Set dynamic API Key (using = as separator)
+        run: |
+          MODEL="${{ vars.OPENCODE_MODEL }}"
+          PROVIDER="${MODEL%%/*}"
+          echo "Provider: $PROVIDER"
+          MAPPING_TABLE="${{ vars.API_KEY_PREFIX }}"
+          IFS=',' read -ra PAIRS <<< "$MAPPING_TABLE"
+          for pair in "${PAIRS[@]}"; do
+            pair="$(echo "$pair" | xargs)"
+            key="${pair%%=*}"
+            value="${pair#*=}"
+            if [[ "$PROVIDER" == "$key" ]]; then
+              ENV_VAR_NAME="${value}_API_KEY"
+              echo "$ENV_VAR_NAME=${{ secrets.API_KEY }}" >> $GITHUB_ENV
+              echo "✅ Set $ENV_VAR_NAME"
+              exit 0
+            fi
+          done
+          echo "❌ No mapping for provider: $PROVIDER"
+          exit 1
+
       - name: Run OpenCode
         uses: anomalyco/opencode/github@latest
         env:
-          OPENCODE_MODEL: "zhipuai/glm-4.5-flash"
-          ZHIPU_API_KEY: ${{ secrets.ZHIPU_API_KEY }}
+          OPENCODE_MODEL: ${{ vars.OPENCODE_MODEL }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           model: ${{ env.OPENCODE_MODEL }}
